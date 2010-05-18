@@ -1,10 +1,10 @@
 #!/usr/bin/python
 from distutils.core import setup
 
-VERSION = "1.00"
+VERSION = "1.01"
 
 setup(
-name = "SocksiPy",
+name = "SocksiPy-branch",
 version = VERSION,
 description = "A Python SOCKS module",
 long_description = "This Python module allows you to create TCP connections through a SOCKS proxy without any special effort.",
