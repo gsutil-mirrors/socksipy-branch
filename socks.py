@@ -241,7 +241,7 @@ class socksocket(socket.socket):
 			boundaddr = self.__recvall(4)
 		elif resp[3] == "\x03":
 			resp = resp + self.recv(1)
-			boundaddr = self.__recvall(resp[4])
+			boundaddr = self.__recvall(ord(resp[4]))
 		else:
 			self.close()
 			raise GeneralProxyError((1,_generalerrors[1]))
