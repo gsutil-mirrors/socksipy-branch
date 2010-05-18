@@ -138,7 +138,9 @@ class socksocket(socket.socket):
 		"""
 		data = ""
 		while len(data) < bytes:
-			data = data + self.recv(bytes-len(data))
+			d = self.recv(bytes-len(data))
+			if not d: raise GeneralProxyError("connection closed unexpectedly")
+			data = data + d
 		return data
 	
 	def setproxy(self,proxytype=None,addr=None,port=None,rdns=True,username=None,password=None):
