@@ -30,8 +30,19 @@ for tunneling connections through SOCKS proxies.
 
 """
 
+"""
+
+Minor modifications made by Christopher Gilbert (http://motomastyle.com/)
+for use in PyLoris (http://pyloris.sourceforge.net/)
+
+Minor modifications made by Mario Vilas (http://breakingcode.wordpress.com/)
+mainly to merge bug fixes found in Sourceforge
+
+"""
+
 import socket
 import struct
+import sys
 
 PROXY_TYPE_SOCKS4 = 1
 PROXY_TYPE_SOCKS5 = 2
@@ -39,6 +50,11 @@ PROXY_TYPE_HTTP = 3
 
 _defaultproxy = None
 _orgsocket = socket.socket
+
+# Small hack for Python 2.x
+if sys.version_info[0] <= 2:
+    def bytes(obj, enc = None):
+        return obj
 
 class ProxyError(Exception):
     def __init__(self, value):
@@ -131,17 +147,22 @@ class socksocket(socket.socket):
         self.__proxysockname = None
         self.__proxypeername = None
     
-    def __recvall(self, bytes):
-        """__recvall(bytes) -> data
+    def __recvall(self, count):
+        """__recvall(count) -> data
         Receive EXACTLY the number of bytes requested from the socket.
         Blocks until the required number of bytes have been received.
         """
-        data = ""
-        while len(data) < bytes:
-            d = self.recv(bytes-len(data))
-            if not d: raise GeneralProxyError("connection closed unexpectedly")
+        data = bytes("")
+        while len(data) < count:
+            d = self.recv(count-len(data)).decode()
+            if not d: raise GeneralProxyError((0,"connection closed unexpectedly"))
             data = data + d
         return data
+    
+	def sendall(self, bytes):
+        if 'encode' in dir(bytes):
+            bytes = bytes.encode()
+        socket.socket.sendall(self, bytes)
     
     def setproxy(self,proxytype=None,addr=None,port=None,rdns=True,username=None,password=None):
         """setproxy(proxytype, addr[, port[, rdns[, username[, password]]]])
@@ -198,7 +219,7 @@ class socksocket(socket.socket):
             if authstat[1] != "\x00":
                 # Authentication failed
                 self.close()
-                raise Socks5AuthError,((3,_socks5autherrors[3]))
+                raise Socks5AuthError((3,_socks5autherrors[3]))
             # Authentication succeeded
         else:
             # Reaching here is always bad
@@ -224,7 +245,7 @@ class socksocket(socket.socket):
                 # Resolve locally
                 ipaddr = socket.inet_aton(socket.gethostbyname(destaddr))
                 req = req + "\x01" + ipaddr
-        req = req + struct.pack(">H",destport)
+        req = req + struct.pack(">H",destport).decode()
         self.sendall(req)
         # Get the response
         resp = self.__recvall(4)
@@ -247,7 +268,7 @@ class socksocket(socket.socket):
         else:
             self.close()
             raise GeneralProxyError((1,_generalerrors[1]))
-        boundport = struct.unpack(">H",self.__recvall(2))[0]
+        boundport = struct.unpack(">H",bytes(self.__recvall(2), 'utf8'))[0]
         self.__proxysockname = (boundaddr,boundport)
         if ipaddr != None:
             self.__proxypeername = (socket.inet_ntoa(ipaddr),destport)
@@ -289,7 +310,7 @@ class socksocket(socket.socket):
             else:
                 ipaddr = socket.inet_aton(socket.gethostbyname(destaddr))
         # Construct the request packet
-        req = "\x04\x01" + struct.pack(">H",destport) + ipaddr
+        req = "\x04\x01" + struct.pack(">H",destport).decode() + ipaddr
         # The username parameter is considered userid for SOCKS4
         if self.__proxy[4] != None:
             req = req + self.__proxy[4]
@@ -315,7 +336,7 @@ class socksocket(socket.socket):
             else:
                 raise Socks4Error((94,_socks4errors[4]))
         # Get the bound address/port
-        self.__proxysockname = (socket.inet_ntoa(resp[4:]),struct.unpack(">H",resp[2:4])[0])
+        self.__proxysockname = (socket.inet_ntoa(resp[4:]),struct.unpack(">H",bytes(resp[2:4],'utf8'))[0])
         if rmtrslv != None:
             self.__proxypeername = (socket.inet_ntoa(ipaddr),destport)
         else:
