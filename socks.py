@@ -159,7 +159,7 @@ class socksocket(socket.socket):
             data = data + d
         return data
     
-	def sendall(self, bytes):
+    def sendall(self, bytes):
         if 'encode' in dir(bytes):
             bytes = bytes.encode()
         socket.socket.sendall(self, bytes)
