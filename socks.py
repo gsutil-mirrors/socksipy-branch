@@ -161,7 +161,10 @@ class socksocket(socket.socket):
     
     def sendall(self, bytes):
         if 'encode' in dir(bytes):
-            bytes = bytes.encode()
+            try:
+                bytes = bytes.encode()
+            except Exception:
+                pass
         socket.socket.sendall(self, bytes)
     
     def setproxy(self,proxytype=None,addr=None,port=None,rdns=True,username=None,password=None):
