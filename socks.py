@@ -147,6 +147,22 @@ class socksocket(socket.socket):
         self.__proxysockname = None
         self.__proxypeername = None
     
+    def __decode(self, bytes):
+        if 'decode' in dir(bytes):
+            try:
+                bytes = bytes.decode()
+            except Exception:
+                pass
+        return bytes
+    
+    def __encode(self, bytes):
+        if 'encode' in dir(bytes):
+            try:
+                bytes = bytes.encode()
+            except Exception:
+                pass
+        return bytes
+    
     def __recvall(self, count):
         """__recvall(count) -> data
         Receive EXACTLY the number of bytes requested from the socket.
@@ -154,18 +170,13 @@ class socksocket(socket.socket):
         """
         data = bytes("")
         while len(data) < count:
-            d = self.recv(count-len(data)).decode()
+            d = self.recv(count-len(data))
             if not d: raise GeneralProxyError((0,"connection closed unexpectedly"))
-            data = data + d
+            data = data + self.__decode(d)
         return data
     
     def sendall(self, bytes):
-        if 'encode' in dir(bytes):
-            try:
-                bytes = bytes.encode()
-            except Exception:
-                pass
-        socket.socket.sendall(self, bytes)
+        socket.socket.sendall(self, self.__encode(bytes))
     
     def setproxy(self,proxytype=None,addr=None,port=None,rdns=True,username=None,password=None):
         """setproxy(proxytype, addr[, port[, rdns[, username[, password]]]])
@@ -248,7 +259,7 @@ class socksocket(socket.socket):
                 # Resolve locally
                 ipaddr = socket.inet_aton(socket.gethostbyname(destaddr))
                 req = req + "\x01" + ipaddr
-        req = req + struct.pack(">H",destport).decode()
+        req = req + self.__decode(struct.pack(">H",destport))
         self.sendall(req)
         # Get the response
         resp = self.__recvall(4)
@@ -313,7 +324,7 @@ class socksocket(socket.socket):
             else:
                 ipaddr = socket.inet_aton(socket.gethostbyname(destaddr))
         # Construct the request packet
-        req = "\x04\x01" + struct.pack(">H",destport).decode() + ipaddr
+        req = "\x04\x01" + self.__decode(struct.pack(">H",destport)) + ipaddr
         # The username parameter is considered userid for SOCKS4
         if self.__proxy[4] != None:
             req = req + self.__proxy[4]
