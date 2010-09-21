@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from distutils.core import setup
 
-VERSION = "1.01"
+VERSION = "1.02"
 
 setup(
 name = "SocksiPy-branch",
