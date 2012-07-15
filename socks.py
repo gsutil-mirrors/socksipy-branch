@@ -38,6 +38,8 @@ for use in PyLoris (http://pyloris.sourceforge.net/)
 Minor modifications made by Mario Vilas (http://breakingcode.wordpress.com/)
 mainly to merge bug fixes found in Sourceforge
 
+Minor modifications made by Eugene Dementiev (http://www.dementiev.eu/)
+
 """
 
 import socket
@@ -327,7 +329,10 @@ class socksocket(socket.socket):
         # We read the response until we get the string "\r\n\r\n"
         resp = self.recv(1)
         while resp.find("\r\n\r\n".encode()) == -1:
-            resp = resp + self.recv(1)
+            recv = self.recv(1)
+            if not recv:
+                raise GeneralProxyError((1, _generalerrors[1]))
+            resp = resp + recv
         # We just need the first line to check if the connection
         # was successful
         statusline = resp.splitlines()[0].split(" ".encode(), 2)
